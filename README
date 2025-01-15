@@ -4,3 +4,4 @@ Tech stack : TypeScript, Express Js, Docker, Postgresql
 
 Context : This is the backend server site of adam_note_book app. The task that has done on the application is handle over here. On the task ts the route for creating, updating, deleting, fetching 
 has defined. Here is a flowchart which explains how the backend system works 
+![Alt text](https://github.com/Abir-Zayn/adam_note_book_backend/blob/master/Screenshot%202025-01-15%20200128.png)
