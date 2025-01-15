@@ -1,9 +1,10 @@
 //Creating an express router for the task routes
-import { Router } from "express";
+import { Router, Response } from "express";
 import { auth, AuthRequest } from "../middleware/auth";
 import { NewTask, tasks } from "../db/schema";
 import { db } from "../db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { pgTable, uuid, text, timestamp, boolean } from "drizzle-orm/pg-core";
 
 const taskRouter = Router();
 
@@ -73,30 +74,83 @@ taskRouter.delete("/:taskId", auth, async (req: AuthRequest, res) => {
     }
 });
 
-taskRouter.patch("/:taskId", auth, async (req: AuthRequest, res) => {
+
+//create the route which handles the update route for a task
+// Replace the duplicate PATCH routes with this single PUT route
+taskRouter.patch("/:taskId", auth, async (req: AuthRequest, res): Promise<void> => {
     try {
         const { taskId } = req.params;
-        const { completed } = req.body;;
+        const { title, description, hexColor, tag, dueAt, priority, completed } = req.body as CreateTaskBody;
 
+        // Validate UUID format
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(taskId)) {
+            res.status(400).json({ error: "Invalid task ID format" });
+            return;
+        }
+
+        // First check if the task exists
+        const existingTask = await db
+            .select()
+            .from(tasks)
+            .where(
+                and(
+                    eq(tasks.id, taskId as string),
+                    eq(tasks.uid, req.user!)
+                )
+            );
+
+        if (!existingTask.length) {
+            res.status(404).json({
+                error: "Task not found or unauthorized",
+                taskId,
+                userId: req.user
+            });
+            return;
+        }
+
+        // Update the task
         const [updatedTask] = await db
             .update(tasks)
-            .set({ completed })
-            .where(eq(tasks.id, taskId))
+            .set({
+                title,
+                description,
+                hexColor,
+                tag,
+                priority: priority.toString(),
+                dueAt: dueAt ? new Date(dueAt) : undefined,
+                completed,
+                updated_at: new Date() // Update the updated_at timestamp
+            })
+            .where(
+                and(
+                    eq(tasks.id, taskId as string),
+                    eq(tasks.uid, req.user!)
+                )
+            )
             .returning();
 
         if (!updatedTask) {
-            res.status(404).json({ error: "Task not found" });
+            res.status(404).json({ error: "Failed to update task" });
             return;
         }
 
         res.json(updatedTask);
-    } catch (e) {
-        res.status(500).json({ error: e });
+    } catch (err) {
+        console.error('Update task error:', err);
+        if (err instanceof Error) {
+            res.status(500).json({
+                error: err.toString(),
+                taskId: req.params.taskId
+            });
+        } else {
+            res.status(500).json({
+                error: "Unknown error",
+                taskId: req.params.taskId
+            });
+        }
     }
 });
-
-//update the task
-
 
 
 export default taskRouter;
