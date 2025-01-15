@@ -111,7 +111,7 @@ authRouter.post("/login", async (req: Request<{}, {}, LoginBody>, res: Response)
         if (error instanceof Error) {
             res.status(500).send(error.message);
         } else {
-           res.status(500).json(false);
+            res.status(500).json(false);
         }
     }
 });
@@ -147,18 +147,18 @@ authRouter.post("/token_is_valid", async (req, res) => {
 });
 
 //This is the root route for auth
-authRouter.get("/", auth, async (req:AuthRequest, res) => {
-    try{
+authRouter.get("/", auth, async (req: AuthRequest, res) => {
+    try {
         // Check if the user is present in the request object
-        if(!req.user){
-            res.status(401).json({error:"User not Found"});
+        if (!req.user) {
+            res.status(401).json({ error: "User not Found" });
             return;
         }
         // Query the database for the user
         const [user] = await db.select().from(users).where(eq(users.id, req.user));
         // Send the user data along with the token
-        res.json({...user, token:req.token});
-    }catch(err){
+        res.json({ ...user, token: req.token });
+    } catch (err) {
         res.status(500).send("An unknown error occurred");
     }
 });

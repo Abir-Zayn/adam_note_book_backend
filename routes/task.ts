@@ -4,7 +4,6 @@ import { auth, AuthRequest } from "../middleware/auth";
 import { NewTask, tasks } from "../db/schema";
 import { db } from "../db";
 import { eq, and } from "drizzle-orm";
-import { pgTable, uuid, text, timestamp, boolean } from "drizzle-orm/pg-core";
 
 const taskRouter = Router();
 
